@@ -1,0 +1,686 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="dark">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>OmniCheck-AI — Advanced PDF & AI Metadata Analyzer</title>
+  <meta name="description" content="Professional ML Analysis Engine: Detect AI content, Turnitin-style plagiarism verification, interactive AI humanization, and attractive diagnostic PDF reports.">
+  <link rel="stylesheet" href="styles.css">
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js" defer></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/mammoth/1.6.0/mammoth.browser.min.js" defer></script>
+</head>
+<body>
+
+  <!-- Device Selection Modal (Opens on Start) -->
+  <div id="deviceModal" class="device-modal-backdrop">
+    <div class="device-modal-card">
+      <div class="device-modal-badge">OmniCheck-AI Adaptive Display</div>
+      <h2 class="device-modal-title">Which device are you using?</h2>
+      <p class="device-modal-subtitle">Select your device to tailor the workspace into the ideal orientation for you:</p>
+
+      <div class="device-options-grid">
+        <!-- Phone / Portrait Option -->
+        <div class="device-option-card" id="selectPhoneBtn">
+          <div class="device-icon-wrap phone">
+            <span>📱</span>
+          </div>
+          <div class="device-name">Phone / Mobile</div>
+          <div class="device-mode-badge portrait">Portrait Mode</div>
+          <p class="device-desc">Compact single-column stream, vertical card stacking, touch-friendly buttons & fluid reading.</p>
+          <button class="btn-primary" style="width: 100%; justify-content: center; padding: 10px;">Select Phone (Portrait)</button>
+        </div>
+
+        <!-- Laptop / Landscape Option -->
+        <div class="device-option-card" id="selectLaptopBtn">
+          <div class="device-icon-wrap laptop">
+            <span>💻</span>
+          </div>
+          <div class="device-name">Laptop / Desktop</div>
+          <div class="device-mode-badge landscape">Landscape Mode</div>
+          <p class="device-desc">Spacious widescreen layout, multi-column dashboard, side-by-side analytics & pie charts.</p>
+          <button class="btn-primary" style="width: 100%; justify-content: center; padding: 10px;">Select Laptop (Landscape)</button>
+        </div>
+      </div>
+
+      <div class="device-modal-footer">
+        💡 You can switch between Phone (Portrait) and Laptop (Landscape) anytime using the top navigation bar.
+      </div>
+    </div>
+  </div>
+
+  <!-- Top Navigation Header -->
+  <header>
+    <div class="container">
+      <div class="header-content">
+        <a href="#" class="brand">
+          <div class="brand-icon">✓</div>
+          <div class="brand-title">
+            OmniCheck-AI
+            <span class="brand-tag">v2.4 Pro</span>
+          </div>
+        </a>
+
+        <div class="header-actions">
+          <div class="badge-guardrail" title="Strict limit enforced per scan">
+            <span class="pulse-dot"></span>
+            <span>Guardrail: <strong>≤ 10,000 Words</strong></span>
+          </div>
+
+          <button id="deviceToggleBtn" class="theme-toggle-btn" aria-label="Switch device view mode" title="Switch between Phone (Portrait) and Laptop (Landscape)">
+            <span id="deviceIcon">💻</span>
+            <span id="deviceLabel">Laptop Mode</span>
+          </button>
+
+          <button id="themeToggleBtn" class="theme-toggle-btn" aria-label="Toggle theme">
+            <span id="themeIcon">☀️</span>
+            <span id="themeLabel">Light</span>
+          </button>
+        </div>
+      </div>
+    </div>
+  </header>
+
+  <main class="container">
+    <!-- Hero Intro -->
+    <section class="hero">
+      <h1>AI Content Detector, Turnitin Plagiarism Scanner & Humanizer</h1>
+      <p>Analyze documents with deep semantic perplexity, Turnitin similarity matching, interactive AI humanization, and attractive PDF reports.</p>
+    </section>
+
+    <!-- Quick Presets for 1-Click Testing -->
+    <div class="presets-bar">
+      <span class="preset-label">Test Presets:</span>
+      <button class="preset-btn" data-preset="aiEssay">🤖 AI-Generated Essay</button>
+      <button class="preset-btn" data-preset="plagiarizedPaper">📝 Copied Research Paper</button>
+      <button class="preset-btn" data-preset="humanArticle">👤 Natural Human Article</button>
+      <button class="preset-btn" data-preset="mixedText">⚡ Mixed Hybrid Sample</button>
+      <button class="preset-btn" data-preset="oversizedText" title="Trigger the 10,000 word guardrail">⚠️ 10,001+ Words (Limit Test)</button>
+    </div>
+
+    <!-- Workbench Card -->
+    <div class="workbench-grid">
+      <div class="card input-card">
+        <!-- Scan progress overlay -->
+        <div id="scanOverlay" class="scan-progress-overlay">
+          <div class="spinner"></div>
+          <div id="scanPhaseText" class="scan-phase-text">Tokenizing document & verifying guardrails...</div>
+        </div>
+
+        <!-- Document Details: Author & Title Options -->
+        <div class="doc-meta-inputs">
+          <div class="meta-input-group">
+            <label for="docAuthorInput">👤 Author Name</label>
+            <input type="text" id="docAuthorInput" placeholder="e.g. Dr. Alex Johnson / Student Name" />
+          </div>
+          <div class="meta-input-group">
+            <label for="docTitleInput">🏷️ Document Title</label>
+            <input type="text" id="docTitleInput" placeholder="e.g. Term Paper: Impact of Pair Programming" />
+          </div>
+        </div>
+
+        <!-- Input Mode Tabs -->
+        <div class="tab-nav">
+          <button class="tab-btn active" data-tab="tab-text">✍️ Paste Raw Text</button>
+          <button class="tab-btn" data-tab="tab-upload">📁 Upload File (PDF / DOCX / TXT)</button>
+        </div>
+
+        <!-- Tab 1: Raw Text Input -->
+        <div id="tab-text" class="input-pane active">
+          <div class="textarea-wrapper">
+            <textarea id="docTextInput" placeholder="Paste your text, paper, or essay here to begin analysis (Up to 10,000 words per scan)..."></textarea>
+          </div>
+        </div>
+
+        <!-- Tab 2: File Upload -->
+        <div id="tab-upload" class="input-pane">
+          <div id="dropzone" class="dropzone">
+            <div class="dropzone-icon">📄</div>
+            <div class="dropzone-title">Drag & drop your document here, or click to browse</div>
+            <div class="dropzone-hint">Supports PDF (.pdf), Microsoft Word (.docx), and Plain Text (.txt) — Max 10,000 words</div>
+            <input type="file" id="fileInput" accept=".pdf,.docx,.txt" style="display: none;">
+          </div>
+
+          <div id="filePreviewCard" class="file-preview-card">
+            <div class="file-info-group">
+              <span id="fileBadge" class="file-badge">DOCX</span>
+              <div>
+                <strong id="previewFileName">document.docx</strong>
+                <div id="previewFileMeta" style="font-size: 0.8rem; color: var(--text-muted);">0 KB • 0 words</div>
+              </div>
+            </div>
+            <button id="removeFileBtn" class="btn-small" style="color: var(--color-ai);">Remove</button>
+          </div>
+        </div>
+
+        <!-- Word Count Bar & Scan Trigger -->
+        <div class="input-meta-bar">
+          <div class="stats-trackers">
+            <div class="stat-pill">
+              <span>Words:</span>
+              <strong id="liveWordCount">0</strong>
+              <span style="color: var(--text-dim);">/ 10,000</span>
+            </div>
+            <div class="stat-pill">
+              <span>Characters:</span>
+              <strong id="liveCharCount">0</strong>
+            </div>
+            <div class="word-limit-meter">
+              <div class="meter-bar">
+                <div id="meterFill" class="meter-fill"></div>
+              </div>
+              <span id="meterLabel" style="font-size: 0.75rem; color: var(--text-dim);">0%</span>
+            </div>
+          </div>
+
+          <div class="action-buttons">
+            <button id="clearInputBtn" class="btn-secondary" title="Clear current content">Clear</button>
+            <button id="pasteClipboardBtn" class="btn-secondary" title="Paste from clipboard">📋 Paste</button>
+            <button id="runScanBtn" class="btn-primary">⚡ Run OmniCheck Diagnostic</button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Results Section (Visible after Scan) -->
+    <div id="resultsWrapper" class="results-wrapper">
+
+      <!-- View Switcher Ribbon -->
+      <div class="view-mode-ribbon">
+        <div class="mode-pills">
+          <button class="mode-pill-btn active" data-view="view-report">📑 PDF Analysis Report</button>
+          <button class="mode-pill-btn" data-view="view-turnitin">🔴 Turnitin Plagiarism Report</button>
+          <button class="mode-pill-btn" data-view="view-charts">📊 Visual Data & Pie Charts</button>
+          <button class="mode-pill-btn" data-view="view-inspector">🔍 AI Content Analyzer</button>
+          <button class="mode-pill-btn" data-view="view-humanizer">✍️ AI Humanizer Studio</button>
+          <button class="mode-pill-btn" data-view="view-raw">📄 Raw Markdown</button>
+        </div>
+
+        <div style="display: flex; gap: 8px;">
+          <button id="printReportBtn" class="btn-secondary" style="font-size: 0.82rem; padding: 7px 14px;">🖨️ Print / Save PDF</button>
+          <button id="downloadReportBtn" class="btn-secondary" style="font-size: 0.82rem; padding: 7px 12px;">💾 Download .md</button>
+          <button id="copyReportBtn" class="btn-secondary" style="font-size: 0.82rem; padding: 7px 12px;">📋 Copy</button>
+        </div>
+      </div>
+
+      <!-- ============================================================== -->
+      <!-- VIEW 1: ENHANCED ATTRACTIVE PDFCHECK REPORT                    -->
+      <!-- ============================================================== -->
+      <div id="view-report" class="view-content active">
+        <div class="pdfcheck-paper">
+          
+          <div class="pdfcheck-top-bar">
+            <span class="verified-seal">🛡️ OmniCheck Verified Original</span>
+            <span style="font-size: 0.82rem; color: var(--text-muted); font-family: var(--font-mono);">Document Audit #<span id="pdfAuditNum">219842</span></span>
+          </div>
+
+          <!-- Page 1 Header -->
+          <div class="pdfcheck-header">
+            <h2>PDF Analysis Report</h2>
+            <div class="report-generated-by">
+              Generated by <strong style="color: var(--pdf-green);">OmniCheck-AI</strong> on <span id="pdfGenDate">October 25, 2026 at 7:30 PM</span>
+            </div>
+          </div>
+
+          <div class="pdfcheck-divider"></div>
+
+          <!-- Basic Checks Banner -->
+          <div id="pdfCheckBanner" class="pdfcheck-banner">
+            <div class="banner-left">
+              <div class="banner-title">
+                <span id="bannerIcon">✓</span>
+                <span id="bannerMainText">Basic Checks Passed · Score 100/100</span>
+              </div>
+              <div id="bannerSubText" class="banner-subtitle">10 passed · 0 warnings</div>
+            </div>
+            <div style="display: flex; gap: 14px; align-items: center;">
+              <span id="bannerBadge" class="file-badge" style="font-size: 0.85rem; padding: 8px 14px;">VERIFIED CLEAN</span>
+            </div>
+          </div>
+
+          <!-- Section: File Information -->
+          <div class="pdf-section-title">File Information</div>
+          <table class="pdfcheck-table">
+            <tbody>
+              <tr>
+                <td class="col-label">Filename</td>
+                <td class="col-val" id="pdfFilename">Term Paper - Impact of Pair Programming.pdf</td>
+              </tr>
+              <tr>
+                <td class="col-label">File Size</td>
+                <td class="col-val" id="pdfFileSize">163.31 KB</td>
+              </tr>
+              <tr>
+                <td class="col-label">Pages</td>
+                <td class="col-val" id="pdfPages">8</td>
+              </tr>
+              <tr>
+                <td class="col-label">PDF Version</td>
+                <td class="col-val" id="pdfVersion">1.4</td>
+              </tr>
+              <tr>
+                <td class="col-label">Encrypted</td>
+                <td class="col-val" id="pdfEncrypted">No</td>
+              </tr>
+              <tr>
+                <td class="col-label">Analysis Date</td>
+                <td class="col-val" id="pdfAnalysisDate">October 25, 2026 at 7:35 PM</td>
+              </tr>
+            </tbody>
+          </table>
+
+          <!-- Section: Document Metadata -->
+          <div class="pdf-section-title">Document Metadata</div>
+          <table class="pdfcheck-table">
+            <tbody>
+              <tr>
+                <td class="col-label">Title</td>
+                <td class="col-val" id="pdfTitle">Term Paper: Impact of Pair Programming</td>
+              </tr>
+              <tr>
+                <td class="col-label">Author</td>
+                <td class="col-val" id="pdfAuthor">Not specified</td>
+              </tr>
+              <tr>
+                <td class="col-label">Subject</td>
+                <td class="col-val" id="pdfSubject">Not specified</td>
+              </tr>
+              <tr>
+                <td class="col-label">Keywords</td>
+                <td class="col-val" id="pdfKeywords">Not specified</td>
+              </tr>
+            </tbody>
+          </table>
+
+          <!-- Section: Document Timeline -->
+          <div class="pdf-section-title">Document Timeline</div>
+          <div class="pdfcheck-timeline">
+            <div class="timeline-item">
+              <div class="timeline-title">Created</div>
+              <div class="timeline-date" id="pdfTimelineCreated">October 25, 2026 at 2:09 PM</div>
+              <div class="timeline-iso" id="pdfTimelineIso">2026-10-25T14:09:36+00:00</div>
+            </div>
+            <div class="timeline-item">
+              <div class="timeline-title">Analyzed</div>
+              <div class="timeline-date" id="pdfTimelineAnalyzed">October 25, 2026 at 7:35 PM</div>
+              <div class="timeline-iso" id="pdfTimelineAnalyzedIso">Verified by OmniCheck-AI Forensic Engine</div>
+            </div>
+          </div>
+
+          <!-- Section: Software & Application -->
+          <div class="pdf-section-title">Software & Application</div>
+          <table class="pdfcheck-table">
+            <tbody>
+              <tr>
+                <td class="col-label">Creator Application</td>
+                <td class="col-val" id="pdfCreatorApp">Chromium</td>
+              </tr>
+              <tr>
+                <td class="col-label">PDF Producer</td>
+                <td class="col-val" id="pdfProducer">Skia/PDF m136</td>
+              </tr>
+              <tr>
+                <td class="col-label">Detected Software</td>
+                <td class="col-val" id="pdfDetectedSoftware">Google Skia PDF, Chromium</td>
+              </tr>
+            </tbody>
+          </table>
+
+          <!-- Page Break in Print -->
+          <div class="page-break"></div>
+
+          <!-- Section: Basic Check Results (Matches Page 2) -->
+          <div class="pdf-section-title">Basic Check Results</div>
+          <div id="pdfBasicCheckList" class="check-cards-list"></div>
+
+          <!-- Page Break in Print -->
+          <div class="page-break"></div>
+
+          <!-- Section: Raw Metadata (Matches Page 3) -->
+          <div class="pdf-section-title">Raw Metadata</div>
+          <table class="pdfcheck-table">
+            <tbody id="pdfRawMetadataTbody"></tbody>
+          </table>
+
+          <!-- Footer with SHA-256 Hash -->
+          <div class="pdfcheck-footer">
+            <div class="hash-label">File Hash (SHA-256):</div>
+            <div id="pdfFileHash" class="hash-box">2fbd663e6871700811bf71149c47d6971634ba4c7dd3720dab32456584501831</div>
+            <div style="font-size: 0.85rem; color: var(--text-muted); margin-top: 8px;">
+              This report was generated by OmniCheck-AI - Free PDF & ML Content Analyzer<br>
+              <span style="color: var(--pdf-green); font-weight: 600;">https://omnicheck.ai</span>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- ============================================================== -->
+      <!-- VIEW 2: TURNITIN ORIGINALITY & PLAGIARISM REPORT               -->
+      <!-- ============================================================== -->
+      <div id="view-turnitin" class="view-content" style="display: none;">
+        <div class="turnitin-paper">
+          <!-- Turnitin Header -->
+          <div class="turnitin-header">
+            <div class="turnitin-brand">
+              <span class="turnitin-logo-badge">turnitin</span>
+              <span class="turnitin-title-sub">ORIGINALITY REPORT</span>
+            </div>
+            <div class="turnitin-meta-header">
+              <div id="turnitinDocTitle" class="turnitin-doc-title">Term Paper: Impact of Pair Programming</div>
+              <div id="turnitinDocAuthor" class="turnitin-doc-author">By Dr. Alex Johnson</div>
+            </div>
+          </div>
+
+          <!-- Turnitin Similarity Bar -->
+          <div class="turnitin-similarity-bar">
+            <div class="similarity-index-box">
+              <div id="turnitinIndexScore" class="similarity-number">0%</div>
+              <div class="similarity-label">SIMILARITY INDEX</div>
+            </div>
+
+            <div class="similarity-breakdown">
+              <div class="sim-stat">
+                <strong id="turnitinInternetVal">0%</strong>
+                <span>INTERNET SOURCES</span>
+              </div>
+              <div class="sim-stat">
+                <strong id="turnitinPubVal">0%</strong>
+                <span>PUBLICATIONS</span>
+              </div>
+              <div class="sim-stat">
+                <strong id="turnitinStudentVal">0%</strong>
+                <span>STUDENT PAPERS</span>
+              </div>
+            </div>
+          </div>
+
+          <!-- Highlighted Document with Turnitin Numbered Badges -->
+          <div class="turnitin-section-title">PRIMARY SOURCES & HIGHLIGHTED MATCHES</div>
+          <div id="turnitinAnnotatedDoc" class="turnitin-doc-body"></div>
+
+          <!-- Match Overview List -->
+          <div class="turnitin-section-title" style="margin-top: 24px;">MATCH OVERVIEW</div>
+          <div id="turnitinMatchList" class="turnitin-match-list"></div>
+
+          <!-- Turnitin Digital Receipt -->
+          <div class="turnitin-receipt-card">
+            <div class="receipt-header">
+              <div class="receipt-icon">📜</div>
+              <div>
+                <h4>Turnitin Digital Receipt</h4>
+                <p>This receipt confirms your paper has been cross-referenced against the Turnitin global academic corpus.</p>
+              </div>
+            </div>
+            <div class="receipt-grid">
+              <div><strong>Submission ID:</strong> <span id="trnSubmissionId" style="font-family: var(--font-mono);">trn:oid:219842109</span></div>
+              <div><strong>Submission Date:</strong> <span id="trnDate">October 25, 2026</span></div>
+              <div><strong>File Name:</strong> <span id="trnFileName">document.pdf</span></div>
+              <div><strong>Author:</strong> <span id="trnAuthor">Author Name</span></div>
+              <div><strong>Word Count:</strong> <span id="trnWordCount">0 words</span></div>
+              <div><strong>Character Count:</strong> <span id="trnCharCount">0</span></div>
+              <div><strong>Originality Status:</strong> <span id="trnStatus" style="color: #16a34a; font-weight: 700;">Verified Scanned</span></div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- ============================================================== -->
+      <!-- VIEW 3: ANIMATED PIE CHARTS & VISUAL DATA                      -->
+      <!-- ============================================================== -->
+      <div id="view-charts" class="view-content" style="display: none;">
+        <div class="charts-grid">
+          <!-- Pie Chart 1: AI vs Human Content -->
+          <div class="chart-card">
+            <div class="chart-card-title">🤖 AI Content Breakdown</div>
+            <div class="chart-card-sub">Synthetic token predictability ratio</div>
+            
+            <div class="pie-chart-container">
+              <svg class="pie-svg" viewBox="0 0 160 160">
+                <circle class="pie-bg" cx="80" cy="80" r="60"/>
+                <circle id="pieAiSliceHuman" class="pie-slice" cx="80" cy="80" r="60" stroke="#10b981" stroke-dasharray="0 377" stroke-dashoffset="0"/>
+                <circle id="pieAiSliceAi" class="pie-slice" cx="80" cy="80" r="60" stroke="#ef4444" stroke-dasharray="0 377" stroke-dashoffset="0"/>
+              </svg>
+              <div class="pie-center-label">
+                <span id="pieAiCenterVal" class="pie-center-value" style="color: var(--color-human);">85%</span>
+                <span id="pieAiCenterDesc" class="pie-center-desc">Human</span>
+              </div>
+            </div>
+
+            <div class="chart-legend">
+              <div class="legend-row">
+                <div class="legend-dot-label">
+                  <span class="dot" style="background: #10b981;"></span>
+                  <span>Human Authored</span>
+                </div>
+                <strong id="legendHumanVal">85%</strong>
+              </div>
+              <div class="legend-row">
+                <div class="legend-dot-label">
+                  <span class="dot" style="background: #ef4444;"></span>
+                  <span>AI Generated</span>
+                </div>
+                <strong id="legendAiVal" style="color: var(--color-ai);">15%</strong>
+              </div>
+            </div>
+          </div>
+
+          <!-- Pie Chart 2: Originality & Plagiarism -->
+          <div class="chart-card">
+            <div class="chart-card-title">📝 Plagiarism & Originality</div>
+            <div class="chart-card-sub">Database fingerprint overlap</div>
+
+            <div class="pie-chart-container">
+              <svg class="pie-svg" viewBox="0 0 160 160">
+                <circle class="pie-bg" cx="80" cy="80" r="60"/>
+                <circle id="piePlagSliceOriginal" class="pie-slice" cx="80" cy="80" r="60" stroke="#3b82f6" stroke-dasharray="0 377" stroke-dashoffset="0"/>
+                <circle id="piePlagSliceCopied" class="pie-slice" cx="80" cy="80" r="60" stroke="#f59e0b" stroke-dasharray="0 377" stroke-dashoffset="0"/>
+              </svg>
+              <div class="pie-center-label">
+                <span id="piePlagCenterVal" class="pie-center-value" style="color: #3b82f6;">95%</span>
+                <span class="pie-center-desc">Original</span>
+              </div>
+            </div>
+
+            <div class="chart-legend">
+              <div class="legend-row">
+                <div class="legend-dot-label">
+                  <span class="dot" style="background: #3b82f6;"></span>
+                  <span>Unique / Original</span>
+                </div>
+                <strong id="legendOriginalVal">95%</strong>
+              </div>
+              <div class="legend-row">
+                <div class="legend-dot-label">
+                  <span class="dot" style="background: #f59e0b;"></span>
+                  <span>Matched / Copied</span>
+                </div>
+                <strong id="legendCopiedVal" style="color: var(--color-plag);">5%</strong>
+              </div>
+            </div>
+          </div>
+
+          <!-- Pie Chart 3: Linguistic Complexity & Perplexity -->
+          <div class="chart-card">
+            <div class="chart-card-title">🧠 Perplexity Distribution</div>
+            <div class="chart-card-sub">Vocabulary entropy across clauses</div>
+
+            <div class="pie-chart-container">
+              <svg class="pie-svg" viewBox="0 0 160 160">
+                <circle class="pie-bg" cx="80" cy="80" r="60"/>
+                <circle id="piePerpSliceHigh" class="pie-slice" cx="80" cy="80" r="60" stroke="#10b981" stroke-dasharray="0 377" stroke-dashoffset="0"/>
+                <circle id="piePerpSliceMid" class="pie-slice" cx="80" cy="80" r="60" stroke="#6366f1" stroke-dasharray="0 377" stroke-dashoffset="0"/>
+                <circle id="piePerpSliceLow" class="pie-slice" cx="80" cy="80" r="60" stroke="#ef4444" stroke-dasharray="0 377" stroke-dashoffset="0"/>
+              </svg>
+              <div class="pie-center-label">
+                <span id="piePerpCenterVal" class="pie-center-value" style="color: #6366f1;">72</span>
+                <span class="pie-center-desc">Entropy</span>
+              </div>
+            </div>
+
+            <div class="chart-legend">
+              <div class="legend-row">
+                <div class="legend-dot-label">
+                  <span class="dot" style="background: #10b981;"></span>
+                  <span>High Perplexity (Organic)</span>
+                </div>
+                <strong id="legendPerpHigh">65%</strong>
+              </div>
+              <div class="legend-row">
+                <div class="legend-dot-label">
+                  <span class="dot" style="background: #6366f1;"></span>
+                  <span>Standard Cadence</span>
+                </div>
+                <strong id="legendPerpMid">25%</strong>
+              </div>
+              <div class="legend-row">
+                <div class="legend-dot-label">
+                  <span class="dot" style="background: #ef4444;"></span>
+                  <span>Synthetic Cliché Risk</span>
+                </div>
+                <strong id="legendPerpLow" style="color: var(--color-ai);">10%</strong>
+              </div>
+            </div>
+          </div>
+
+          <!-- Horizontal Burstiness Rhythm Bar -->
+          <div class="bar-chart-card">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px;">
+              <div>
+                <strong style="font-size: 1.05rem;">Sentence Rhythm & Burstiness Spectrum</strong>
+                <div style="font-size: 0.8rem; color: var(--text-muted);">
+                  Coefficient of Variation (CV): <span id="barCvVal" style="color: var(--color-human); font-weight: 700;">0.62</span> • 
+                  Mean Length: <span id="barMeanLen" style="font-weight: 700;">18.4 words</span>
+                </div>
+              </div>
+              <span id="barRatingBadge" class="file-badge" style="background: var(--color-human);">Dynamic Human Cadence</span>
+            </div>
+
+            <div class="multi-bar-container">
+              <div id="barSliceOrganic" class="bar-segment" style="width: 70%; background: #10b981;" title="Dynamic Sentence Variation"></div>
+              <div id="barSliceStandard" class="bar-segment" style="width: 20%; background: #6366f1;" title="Standard Phrasing"></div>
+              <div id="barSliceCliché" class="bar-segment" style="width: 10%; background: #ef4444;" title="Uniform AI Footprint"></div>
+            </div>
+
+            <div style="display: flex; justify-content: space-between; font-size: 0.78rem; color: var(--text-dim);">
+              <span>Short punchy thoughts (3-10 words)</span>
+              <span>Balanced compound structures (15-25 words)</span>
+              <span>Complex periodic clauses (30+ words)</span>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- ============================================================== -->
+      <!-- VIEW 4: AI CONTENT ANALYZER (Interactive Sentence Inspector)    -->
+      <!-- ============================================================== -->
+      <div id="view-inspector" class="view-content" style="display: none;">
+        <div class="card">
+          <div class="reader-header" style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px; flex-wrap: wrap; gap: 12px;">
+            <div>
+              <h3 style="font-size: 1.15rem; font-weight: 800; margin-bottom: 4px;">🔍 AI Content Analyzer & Sentence Inspector</h3>
+              <p style="font-size: 0.85rem; color: var(--text-muted);">Click on any highlighted sentence to view its AI confidence breakdown, perplexity rating, or humanize it.</p>
+            </div>
+
+            <div style="display: flex; gap: 8px;">
+              <button class="filter-btn active" data-filter="all">All Sentences</button>
+              <button class="filter-btn" data-filter="ai">AI Flags</button>
+              <button class="filter-btn" data-filter="plag">Plagiarism</button>
+              <button class="filter-btn" data-filter="human">Human Rhythm</button>
+            </div>
+          </div>
+
+          <div id="annotatedTextContainer" class="annotated-text-container"></div>
+
+          <!-- Sentence Inspector Drawer -->
+          <div id="sentenceInspector" class="sentence-inspector" style="margin-top: 16px; display: none; background: var(--bg-card-hover); border: 1px solid var(--border-color); border-radius: var(--radius-md); padding: 18px;">
+            <div class="inspector-header" style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px;">
+              <div class="inspector-tags" style="display: flex; gap: 8px; align-items: center;">
+                <span id="inspectorTag" class="file-badge" style="background: var(--color-ai);">AI Detected</span>
+                <strong id="inspectorConfidence">Confidence: 92%</strong>
+              </div>
+              <button id="closeInspectorBtn" class="btn-small">✕ Close</button>
+            </div>
+            <div id="inspectorDetails" style="font-size: 0.88rem; color: var(--text-muted); margin-bottom: 14px;"></div>
+            <div style="background: var(--bg-input); padding: 14px; border-radius: var(--radius-sm); border: 1px solid var(--border-color);">
+              <div style="font-size: 0.78rem; font-weight: 700; color: var(--color-human); margin-bottom: 4px;">SUGGESTED HUMANIZED REWRITE:</div>
+              <div id="inspectorRewriteText" style="font-size: 0.95rem; margin-bottom: 10px;"></div>
+              <div style="display: flex; gap: 8px;">
+                <button id="applySingleRewriteBtn" class="btn-primary" style="padding: 7px 16px; font-size: 0.82rem;">Apply This Rewrite</button>
+                <button id="copySingleRewriteBtn" class="btn-secondary" style="padding: 7px 14px; font-size: 0.82rem;">Copy Rewrite</button>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- ============================================================== -->
+      <!-- VIEW 5: AI HUMANIZER STUDIO                                    -->
+      <!-- ============================================================== -->
+      <div id="view-humanizer" class="view-content" style="display: none;">
+        <div class="card">
+          <!-- Humanizer Toolbar with Tone Selection -->
+          <div class="humanizer-toolbar">
+            <div class="tone-selector-group">
+              <label>Humanization Tone:</label>
+              <button class="tone-btn active" data-tone="natural">🌿 Natural Human</button>
+              <button class="tone-btn" data-tone="academic">🎓 Academic Scholarly</button>
+              <button class="tone-btn" data-tone="executive">💼 Executive Direct</button>
+            </div>
+
+            <div style="display: flex; gap: 10px;">
+              <button id="copyFullHumanizedBtn" class="btn-secondary" style="font-size: 0.82rem; padding: 7px 14px;">📋 Copy Full Humanized Text</button>
+              <button id="applyAllHumanizeBtn" class="btn-primary" style="font-size: 0.85rem; padding: 7px 16px;">⚡ Humanize All & Re-Scan</button>
+            </div>
+          </div>
+
+          <div style="margin-bottom: 16px;">
+            <h3 style="font-size: 1.15rem; font-weight: 800; margin-bottom: 4px;">✍️ AI Humanizer Studio</h3>
+            <p style="font-size: 0.85rem; color: var(--text-muted);">Rewrites flagged synthetic sentences into organic, natural human expression and drops your AI detection score.</p>
+          </div>
+
+          <div id="humanizerCardGrid" class="humanizer-card-grid"></div>
+        </div>
+      </div>
+
+      <!-- ============================================================== -->
+      <!-- VIEW 6: RAW MARKDOWN REPORT                                    -->
+      <!-- ============================================================== -->
+      <div id="view-raw" class="view-content" style="display: none;">
+        <div class="card">
+          <pre id="reportPreviewBox" class="report-preview-box"></pre>
+        </div>
+      </div>
+
+    </div>
+  </main>
+
+  <!-- Limit Exceeded Modal -->
+  <div id="limitModal" class="modal-backdrop">
+    <div class="modal-card">
+      <div class="modal-icon">⚠️</div>
+      <div class="modal-title">Word Count Limit Exceeded</div>
+      <div id="modalLimitDesc" class="modal-desc">
+        OmniCheck-AI enforces a strict limit of 10,000 words per scan. Your submitted text contains <strong id="modalWordCount">10,500</strong> words.
+      </div>
+      <div style="display: flex; gap: 10px; justify-content: center;">
+        <button id="trimToLimitBtn" class="btn-primary">Trim to 10,000 Words</button>
+        <button id="closeModalBtn" class="btn-secondary">Close & Edit</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Toast Container -->
+  <div id="toastContainer" class="toast-container"></div>
+
+  <!-- Footer -->
+  <footer>
+    <div class="container">
+      OmniCheck-AI Analysis Engine • Turnitin Similarity & AI Forensic Suite • Strict Limit: 10,000 words
+    </div>
+  </footer>
+
+  <!-- Application Logic -->
+  <script src="analyzer.js"></script>
+  <script src="sample-data.js"></script>
+  <script src="app.js"></script>
+</body>
+</html>
